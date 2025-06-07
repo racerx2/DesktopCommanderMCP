@@ -33,6 +33,12 @@ coverage/
 # Optional eslint cache
 .eslintcache
 
+# Cache directories (conversation cache system)
+Claude_Session/
+*_Cache/
+cache/
+*.cache/
+
 .idea
 .history
 
