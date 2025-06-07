@@ -101,29 +101,38 @@ export const EditBlockArgsSchema = z.object({
 /**
  * Schema for initializing the conversation cache system
  * Creates a file-based persistence layer for maintaining conversation context
+ * Supports topic-based isolation for multiple concurrent projects
  */
 export const InitCacheArgsSchema = z.object({
   cacheDir: z.string().optional().default("C:\\Claude_Session"),
-  projectName: z.string().optional()
+  projectName: z.string().optional(),
+  topic: z.string().optional(), // NEW: Topic-based isolation
+  confirmCreate: z.boolean().optional().default(false), // NEW: Explicit permission required
+  understoodGrowth: z.boolean().optional().default(false), // NEW: User acknowledges file growth
+  sessionOnly: z.boolean().optional().default(false) // NEW: Mark as temporary session cache
 });
 
 /**
  * Schema for updating the conversation cache with new information
  * Allows incremental updates to maintain current conversation state
+ * Supports topic-specific updates
  */
 export const UpdateCacheArgsSchema = z.object({
   conversationSummary: z.string(),
   projectUpdate: z.string().optional(),
   decisionsUpdate: z.string().optional(),
-  nextStepsUpdate: z.string().optional()
+  nextStepsUpdate: z.string().optional(),
+  topic: z.string().optional() // NEW: Topic specification for updates
 });
 
 /**
  * Schema for loading conversation context from cache files
  * Restores complete conversation state for seamless session continuation
+ * Supports topic-based loading
  */
 export const LoadCacheArgsSchema = z.object({
-  cacheDir: z.string().optional().default("C:\\Claude_Session")
+  cacheDir: z.string().optional().default("C:\\Claude_Session"),
+  topic: z.string().optional() // NEW: Topic specification for loading
 });
 
 /**
@@ -132,11 +141,42 @@ export const LoadCacheArgsSchema = z.object({
  */
 export const AutoUpdateCacheArgsSchema = z.object({
   enable: z.boolean(),
-  updateInterval: z.number().optional().default(10) // Every 10 tool calls
+  updateInterval: z.number().optional().default(10), // Every 10 tool calls
+  topic: z.string().optional() // NEW: Topic-specific auto-update settings
 });
 
 /**
  * Schema for checking cache system status
  * Provides comprehensive information about current cache state
+ * Supports topic-specific and global status reporting
  */
-export const GetCacheStatusArgsSchema = z.object({});
+export const GetCacheStatusArgsSchema = z.object({
+  topic: z.string().optional() // NEW: Topic-specific status, or global if omitted
+});
+
+// NEW: Topic management schemas
+/**
+ * Schema for listing all available cache topics
+ */
+export const GetCacheTopicsArgsSchema = z.object({
+  cacheDir: z.string().optional().default("C:\\Claude_Session")
+});
+
+/**
+ * Schema for archiving completed cache topics
+ */
+export const ArchiveCacheArgsSchema = z.object({
+  topic: z.string(),
+  cacheDir: z.string().optional().default("C:\\Claude_Session"),
+  confirmArchive: z.boolean().optional().default(false)
+});
+
+/**
+ * Schema for cleaning up old cache files
+ */
+export const CleanupCacheArgsSchema = z.object({
+  cacheDir: z.string().optional().default("C:\\Claude_Session"),
+  cleanupAfterDays: z.number().optional().default(30),
+  maxSessions: z.number().optional().default(10),
+  confirmCleanup: z.boolean().optional().default(false)
+});

@@ -37,6 +37,9 @@ import {
     LoadCacheArgsSchema,
     AutoUpdateCacheArgsSchema,
     GetCacheStatusArgsSchema,
+    GetCacheTopicsArgsSchema,
+    ArchiveCacheArgsSchema,
+    CleanupCacheArgsSchema,
 } from './tools/schemas.js';
 import {getConfig, setConfigValue} from './tools/config.js';
 import {trackToolCall} from './utils/trackTools.js';
@@ -500,6 +503,67 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         ${CMD_PREFIX_DESCRIPTION}`,
                     inputSchema: zodToJsonSchema(GetCacheStatusArgsSchema),
                 },
+                // Enhanced topic management tools for conversation persistence
+                {
+                    name: "get_cache_topics",
+                    description: `
+                        List all available cache topics with detailed information.
+                        
+                        Provides comprehensive overview of topic-isolated cache systems including:
+                        - All available topics and their project names
+                        - Creation dates and last usage timestamps
+                        - Auto-update status per topic
+                        - Session types (temporary vs persistent)
+                        - Topic directories and file status
+                        - Legacy cache detection
+                        
+                        Enables discovery and management of multiple project caches.
+                        Essential for topic-based conversation continuation workflow.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(GetCacheTopicsArgsSchema),
+                },
+                {
+                    name: "archive_cache",
+                    description: `
+                        Archive a completed cache topic while preserving all data.
+                        
+                        Archives completed projects by:
+                        - Marking topic as archived in session manifest
+                        - Removing from active topics list
+                        - Preserving all cache files for future reference
+                        - Clearing auto-update settings
+                        - Maintaining data accessibility if needed
+                        
+                        Requires explicit confirmation for safety. Archived topics can still
+                        be loaded with load_cache if needed for reference.
+                        
+                        Use this for completed projects to keep topic lists clean while
+                        preserving project history and decisions.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(ArchiveCacheArgsSchema),
+                },
+                {
+                    name: "cleanup_cache",
+                    description: `
+                        Clean up old cache files and unused topic sessions.
+                        
+                        Performs maintenance on cache system by:
+                        - Removing topics older than specified days
+                        - Limiting total number of active topics
+                        - Preserving recently used and currently active topics
+                        - Cleaning up session manifest entries
+                        - Providing detailed cleanup reports
+                        
+                        Requires explicit confirmation due to permanent data deletion.
+                        Helps prevent cache directory bloat while preserving active work.
+                        
+                        Default settings: Remove topics older than 30 days, keep 10 most recent.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(CleanupCacheArgsSchema),
+                },
             ],
         };
     } catch (error) {
@@ -620,6 +684,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 
             case "get_cache_status":
                 return await handlers.handleGetCacheStatus(args);
+
+            // Enhanced topic management tools for conversation persistence
+            case "get_cache_topics":
+                return await handlers.handleGetCacheTopics(args);
+
+            case "archive_cache":
+                return await handlers.handleArchiveCache(args);
+
+            case "cleanup_cache":
+                return await handlers.handleCleanupCache(args);
 
             default:
                 capture('server_unknown_tool', {name});

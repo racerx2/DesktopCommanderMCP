@@ -75,11 +75,14 @@ Execute long-running terminal commands on your computer and manage processes thr
 - Command timeout and background execution support
 - Process management (list and kill processes)
 - Session management for long-running commands
-- **Conversation Cache System**: Persistent memory across Claude sessions
-  - Initialize cache for unlimited conversation continuity
-  - Auto-update cache during conversations
-  - Load complete project context in new sessions
-  - Preserve decisions, project state, and next steps
+- **🧠 Conversation Cache System (EXPERIMENTAL)**: Persistent memory across Claude sessions
+  - **Topic-Based Isolation**: Separate memory for different projects
+  - **Unlimited Continuity**: Never lose conversation context again
+  - **Auto-Updates**: Cache updates automatically every N tool calls
+  - **Session Resumption**: Seamless continuation when hitting conversation limits
+  - **Cumulative Knowledge**: Build understanding over multiple sessions
+  - **Project Memory**: Preserve decisions, architecture, and next steps
+  - **Clean Management**: Archive and cleanup old caches
 - Server configuration management:
   - Get/set configuration values
   - Update multiple settings at once
@@ -102,7 +105,125 @@ Execute long-running terminal commands on your computer and manage processes thr
   - Log rotation with 10MB size limit
   - Detailed timestamps and arguments
 
-## Installation
+## 🧠 Conversation Cache System (EXPERIMENTAL)
+
+> ⚠️ **EXPERIMENTAL FEATURE** - The conversation cache system is experimental and may contain bugs. Use with caution.
+
+The conversation cache system provides Claude with persistent memory across conversation sessions, enabling unlimited conversation continuity for complex projects.
+
+### How It Works
+
+The cache system stores conversation context, project details, decisions, and next steps in structured markdown files. When you hit conversation limits or start new sessions, Claude can instantly restore full context.
+
+### Cache File Structure
+
+```
+C:\Claude_Session\
+├── my_project\                    # Topic-specific directory
+│   ├── conversation_log.md        # Complete conversation history
+│   ├── current_project_state.md   # Technical project details  
+│   ├── decisions_made.md          # Key decisions and approaches
+│   └── next_steps.md             # Current priorities
+├── other_project\                 # Different topic, isolated memory
+│   └── ... (same structure)
+└── session_manifest.json         # Active topic tracking
+```
+
+### Available Cache Tools
+
+#### Core Tools
+- **`init_cache`** - Initialize cache system for a project/topic
+- **`update_cache`** - Update cache with conversation progress
+- **`load_cache`** - Restore session context from cache files
+- **`get_cache_status`** - Check current cache system status
+
+#### Management Tools  
+- **`auto_update_cache`** - Enable/disable automatic cache updates
+- **`get_cache_topics`** - List all available cached topics
+- **`archive_cache`** - Archive completed project caches
+- **`cleanup_cache`** - Clean up old cache files
+
+### Quick Start Examples
+
+#### Initialize Cache for a Project
+```javascript
+init_cache({
+  "cacheDir": "C:\\MyProject_Cache",
+  "projectName": "AI Assistant Development", 
+  "topic": "ai_assistant",
+  "confirmCreate": true
+})
+```
+
+#### Update Cache During Work
+```javascript
+update_cache({
+  "topic": "ai_assistant",
+  "conversationSummary": "Implemented new conversation routing logic",
+  "projectUpdate": "Added support for multi-turn conversations",
+  "decisionsUpdate": "Decided to use state machine pattern for conversation flow",
+  "nextStepsUpdate": "Next: Implement conversation memory persistence"
+})
+```
+
+#### Resume Session in New Conversation
+```javascript
+// Simply run this in a new conversation to restore full context
+load_cache({
+  "topic": "ai_assistant"
+})
+```
+
+#### Enable Auto-Updates
+```javascript
+auto_update_cache({
+  "enable": true,
+  "updateInterval": 10,  // Update every 10 tool calls
+  "topic": "ai_assistant"
+})
+```
+
+### Topic-Based Isolation
+
+Each project gets its own topic with isolated memory:
+- **No Cross-Contamination**: Different projects don't mix contexts
+- **Parallel Development**: Work on multiple projects simultaneously
+- **Clean Organization**: Easy to manage different conversation threads
+
+### Benefits
+
+- **🔄 Unlimited Continuity**: Never lose context when hitting conversation limits
+- **🧠 Persistent Memory**: Claude remembers everything across sessions
+- **📚 Cumulative Knowledge**: Build understanding over multiple conversations
+- **🎯 Enhanced Problem-Solving**: Reference past decisions and discoveries
+- **⚡ Automatic Updates**: Cache stays current without manual intervention
+- **🗂️ Clean Organization**: Topic-based isolation for multiple projects
+
+### Safety Features
+
+- **Permission-Based Creation**: Requires explicit confirmation to create directories
+- **Configurable Directories**: Use custom cache locations
+- **Archive System**: Archive completed projects while preserving data
+- **Cleanup Tools**: Remove old caches to prevent bloat
+- **Error Handling**: Comprehensive error handling for file operations
+
+### Use Cases
+
+- **Complex Coding Projects**: Maintain context across long development sessions
+- **Research Projects**: Build cumulative knowledge over weeks/months
+- **Debugging Sessions**: Remember previous debugging attempts and solutions
+- **Architecture Planning**: Preserve design decisions and rationale
+- **Learning Projects**: Build understanding incrementally over time
+
+### Security Considerations
+
+⚠️ **Important Notes:**
+- Cache files contain conversation history - protect sensitive information
+- Use appropriate directory permissions for cache storage
+- Consider using separate topics for different security contexts
+- Archive or cleanup caches containing sensitive data when projects complete
+
+---
 
 > **⚠️ WARNING: DO NOT INSTALL THIS FORK ⚠️**
 > 
