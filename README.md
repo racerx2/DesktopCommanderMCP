@@ -1,6 +1,33 @@
 # Desktop Commander MCP
 ### Search, update, manage files and run terminal commands with AI
 
+> **🚧 EXPERIMENTAL FORK NOTICE 🚧**
+> 
+> **This is an experimental fork** of the original [Desktop Commander MCP](https://github.com/wonderwhy-er/DesktopCommanderMCP) by [@wonderwhy-er](https://github.com/wonderwhy-er).
+> 
+> **✨ What's Added in This Fork:**
+> - **Conversation Cache System** - Persistent memory across Claude sessions
+> - **5 New Cache Tools** - `init_cache`, `update_cache`, `load_cache`, `auto_update_cache`, `get_cache_status`
+> - **Unlimited Conversation Continuity** - Never lose context when hitting session limits
+> - **Project Context Preservation** - Maintain complex project details across conversations
+> 
+> **🎯 Why This Fork Exists:**
+> This fork adds experimental conversation persistence features for users who need Claude to remember project context across multiple sessions. Perfect for complex development projects, long-term collaborations, and maintaining conversation continuity.
+> 
+> **⚡ Original Project:**
+> For the stable, official version, please visit: **[wonderwhy-er/DesktopCommanderMCP](https://github.com/wonderwhy-er/DesktopCommanderMCP)**
+> 
+> **📋 Status:** 
+> - ✅ **Fully Functional** - All original features work exactly the same
+> - ✅ **Additional Features** - Cache system adds new capabilities
+> - ⚠️ **Experimental** - Cache system is new and may evolve
+> - 🔄 **May Not Stay Updated** - This fork may diverge from the original over time
+> 
+> **🤝 Attribution:** 
+> All original work and credit belongs to [@wonderwhy-er](https://github.com/wonderwhy-er) and the Desktop Commander MCP contributors. This fork adds conversation cache functionality while preserving all original features and documentation.
+
+---
+
 [![npm downloads](https://img.shields.io/npm/dw/@wonderwhy-er/desktop-commander)](https://www.npmjs.com/package/@wonderwhy-er/desktop-commander)
 [![smithery badge](https://smithery.ai/badge/@wonderwhy-er/desktop-commander)](https://smithery.ai/server/@wonderwhy-er/desktop-commander)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://www.buymeacoffee.com/wonderwhyer)
@@ -70,6 +97,17 @@ Execute long-running terminal commands on your computer and manage processes thr
   - Detailed timestamps and arguments
 
 ## Installation
+
+> **📦 Installing This Fork vs Original**
+> 
+> **For Original Version (Stable):** Use the installation instructions below
+> 
+> **For This Fork (With Cache Features):** 
+> - **Manual Installation Required** - Clone this repository and build locally
+> - **Not Available via npm/npx** - This fork is not published to npm
+> - **See [Local Development](#local-development)** for build instructions
+> - **Requires Node.js and TypeScript** for building from source
+
 First, ensure you've downloaded and installed the [Claude Desktop app](https://claude.ai/download) and you have [npm installed](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
 
 > **📋 Update & Uninstall Information:** Before choosing an installation option, note that **only Options 1 and 3 have automatic updates**. Options 2, 4, and 5 require manual updates. See the sections below for update and uninstall instructions for each option.
@@ -688,6 +726,62 @@ Telemetry is enabled by default. To opt out:
 2. The chatbot will update your settings automatically.
 
 For complete details about data collection, please see our [Privacy Policy](PRIVACY.md).
+
+## Local Development (Fork-Specific)
+
+To use this fork with conversation cache features:
+
+### Building from Source
+
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/racerx2/DesktopCommanderMCP.git
+   cd DesktopCommanderMCP
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Build the project:**
+   ```bash
+   npm run build
+   ```
+
+4. **Update Claude Desktop configuration:**
+   
+   Edit your Claude Desktop config file:
+   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+   - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+   Replace the content with:
+   ```json
+   {
+     "mcpServers": {
+       "desktop-commander": {
+         "command": "node",
+         "args": [
+           "/path/to/your/DesktopCommanderMCP/dist/index.js"
+         ]
+       }
+     }
+   }
+   ```
+
+5. **Restart Claude Desktop** to use the enhanced version with cache features.
+
+### Using the Cache System
+
+Once installed, you'll have access to these additional tools:
+- `init_cache` - Initialize conversation persistence
+- `update_cache` - Update conversation context  
+- `load_cache` - Restore conversation from previous session
+- `auto_update_cache` - Enable automatic cache updates
+- `get_cache_status` - Check cache system status
+
+See [CACHE_SYSTEM.md](CACHE_SYSTEM.md) for detailed documentation.
 
 ## License
 
