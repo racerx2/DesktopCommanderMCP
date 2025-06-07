@@ -1,30 +1,36 @@
 # Desktop Commander MCP
 ### Search, update, manage files and run terminal commands with AI
 
-> **🚧 EXPERIMENTAL FORK NOTICE 🚧**
+> **🚧 EXPERIMENTAL FORK NOTICE DO NOT USE! 🚧**
 > 
 > **This is an experimental fork** of the original [Desktop Commander MCP](https://github.com/wonderwhy-er/DesktopCommanderMCP) by [@wonderwhy-er](https://github.com/wonderwhy-er).
 > 
+> **⚠️ WARNING: DO NOT USE THIS FORK ⚠️**
+> - **EXPERIMENTAL CODE** - May contain bugs or instability
+> - **NOT PRODUCTION READY** - Use at your own risk
+> - **NO SUPPORT PROVIDED** - This is a testing/development fork only
+> - **MAY BREAK YOUR SYSTEM** - Experimental features are untested
+> 
 > **✨ What's Added in This Fork:**
-> - **Conversation Cache System** - Persistent memory across Claude sessions
-> - **5 New Cache Tools** - `init_cache`, `update_cache`, `load_cache`, `auto_update_cache`, `get_cache_status`
-> - **Unlimited Conversation Continuity** - Never lose context when hitting session limits
-> - **Project Context Preservation** - Maintain complex project details across conversations
+> - **Conversation Cache System** - Persistent memory across Claude sessions (EXPERIMENTAL)
+> - **5 New Cache Tools** - `init_cache`, `update_cache`, `load_cache`, `auto_update_cache`, `get_cache_status` (UNTESTED)
+> - **Unlimited Conversation Continuity** - Never lose context when hitting session limits (BETA)
+> - **Project Context Preservation** - Maintain complex project details across conversations (EXPERIMENTAL)
 > 
 > **🎯 Why This Fork Exists:**
-> This fork adds experimental conversation persistence features for users who need Claude to remember project context across multiple sessions. Perfect for complex development projects, long-term collaborations, and maintaining conversation continuity.
+> This fork adds experimental conversation persistence features for testing purposes only. These features are unproven and may cause system instability.
 > 
-> **⚡ Original Project:**
-> For the stable, official version, please visit: **[wonderwhy-er/DesktopCommanderMCP](https://github.com/wonderwhy-er/DesktopCommanderMCP)**
+> **⚡ USE THE ORIGINAL PROJECT INSTEAD:**
+> For the stable, official, production-ready version, please visit: **[wonderwhy-er/DesktopCommanderMCP](https://github.com/wonderwhy-er/DesktopCommanderMCP)**
 > 
 > **📋 Status:** 
-> - ✅ **Fully Functional** - All original features work exactly the same
-> - ✅ **Additional Features** - Cache system adds new capabilities
-> - ⚠️ **Experimental** - Cache system is new and may evolve
-> - 🔄 **May Not Stay Updated** - This fork may diverge from the original over time
+> - ⚠️ **EXPERIMENTAL** - DO NOT USE IN PRODUCTION
+> - ⚠️ **UNTESTED** - Features may not work as expected
+> - ⚠️ **UNSUPPORTED** - No warranty or support provided
+> - ⚠️ **DEVELOPMENT ONLY** - For testing and experimentation only
 > 
 > **🤝 Attribution:** 
-> All original work and credit belongs to [@wonderwhy-er](https://github.com/wonderwhy-er) and the Desktop Commander MCP contributors. This fork adds conversation cache functionality while preserving all original features and documentation.
+> All original work and credit belongs to [@wonderwhy-er](https://github.com/wonderwhy-er) and the Desktop Commander MCP contributors. This fork adds experimental conversation cache functionality for testing purposes only.
 
 ---
 
@@ -98,15 +104,17 @@ Execute long-running terminal commands on your computer and manage processes thr
 
 ## Installation
 
-> **📦 Installing This Fork vs Original**
+> **⚠️ WARNING: DO NOT INSTALL THIS FORK ⚠️**
 > 
-> **For Original Version (Stable):** Use the installation instructions below
+> **For Production Use:** Use the original stable version below
 > 
-> **For This Fork (With Cache Features):** 
-> - **Manual Installation Required** - Clone this repository and build locally
-> - **Not Available via npm/npx** - This fork is not published to npm
-> - **See [Local Development](#local-development)** for build instructions
-> - **Requires Node.js and TypeScript** for building from source
+> **This Fork:** 
+> - **DO NOT INSTALL** - Experimental and untested
+> - **FOR TESTING ONLY** - May break your system
+> - **NO SUPPORT** - Use at your own risk
+> - **Manual Installation Required** - Clone this repository and build locally (NOT RECOMMENDED)
+
+**RECOMMENDED: Install the original stable version instead:**
 
 First, ensure you've downloaded and installed the [Claude Desktop app](https://claude.ai/download) and you have [npm installed](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
 
@@ -727,13 +735,18 @@ Telemetry is enabled by default. To opt out:
 
 For complete details about data collection, please see our [Privacy Policy](PRIVACY.md).
 
-## Local Development (Fork-Specific)
+## Local Development (EXPERIMENTAL - DO NOT USE)
 
-To use this fork with conversation cache features:
+> **⚠️ WARNING: THESE INSTRUCTIONS ARE FOR TESTING ONLY ⚠️**
+> 
+> **DO NOT FOLLOW THESE INSTRUCTIONS** unless you are experimenting with untested code.
+> **USE THE ORIGINAL PROJECT** for production use.
 
-### Building from Source
+**FOR TESTING PURPOSES ONLY** - To build this experimental fork:
 
-1. **Clone this repository:**
+### Building from Source (NOT RECOMMENDED)
+
+1. **Clone this repository (AT YOUR OWN RISK):**
    ```bash
    git clone https://github.com/racerx2/DesktopCommanderMCP.git
    cd DesktopCommanderMCP
@@ -744,19 +757,19 @@ To use this fork with conversation cache features:
    npm install
    ```
 
-3. **Build the project:**
+3. **Build the project (EXPERIMENTAL):**
    ```bash
    npm run build
    ```
 
-4. **Update Claude Desktop configuration:**
+4. **Update Claude Desktop configuration (USE AT YOUR OWN RISK):**
    
    Edit your Claude Desktop config file:
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-   Replace the content with:
+   Replace the content with (WARNING - EXPERIMENTAL):
    ```json
    {
      "mcpServers": {
@@ -770,18 +783,20 @@ To use this fork with conversation cache features:
    }
    ```
 
-5. **Restart Claude Desktop** to use the enhanced version with cache features.
+5. **Restart Claude Desktop** (WARNING: May cause instability)
 
-### Using the Cache System
+### Using the Experimental Cache System (NOT RECOMMENDED)
 
-Once installed, you'll have access to these additional tools:
-- `init_cache` - Initialize conversation persistence
-- `update_cache` - Update conversation context  
-- `load_cache` - Restore conversation from previous session
-- `auto_update_cache` - Enable automatic cache updates
-- `get_cache_status` - Check cache system status
+**WARNING:** These tools are experimental and untested:
+- `init_cache` - Initialize conversation persistence (EXPERIMENTAL)
+- `update_cache` - Update conversation context (EXPERIMENTAL)
+- `load_cache` - Restore conversation from previous session (EXPERIMENTAL)
+- `auto_update_cache` - Enable automatic cache updates (EXPERIMENTAL)
+- `get_cache_status` - Check cache system status (EXPERIMENTAL)
 
-See [CACHE_SYSTEM.md](CACHE_SYSTEM.md) for detailed documentation.
+See [CACHE_SYSTEM.md](CACHE_SYSTEM.md) for experimental documentation.
+
+**AGAIN: DO NOT USE THIS FORK - USE THE ORIGINAL PROJECT INSTEAD**
 
 ## License
 
