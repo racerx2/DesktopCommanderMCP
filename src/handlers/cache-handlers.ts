@@ -844,13 +844,70 @@ Load legacy cache, then migrate it to a topic:
                             }]
                         };
                     } else {
-                        return createErrorResponse(`No cache found. Use init_cache to create a new cache system.`);
+                        return {
+                            content: [{
+                                type: "text", 
+                                text: `🎯 **No Cache Found - Let's Set Up Persistent Memory!**
+
+No conversation cache exists yet. The cache system provides **unlimited conversation continuity** across Claude sessions.
+
+**🚀 Quick Start:**
+\`\`\`
+init_cache({
+  "topic": "my_project",
+  "projectName": "My Project Name",
+  "confirmCreate": true,
+  "understoodGrowth": true
+})
+\`\`\`
+
+**✨ What You'll Get:**
+- 🧠 **Persistent Memory**: I'll remember everything across sessions
+- 🗂️ **Project Isolation**: Each topic keeps separate memory  
+- ⚡ **Session Continuation**: Never lose context when hitting conversation limits
+- 📚 **Cumulative Knowledge**: Build understanding over multiple conversations
+
+**🎯 Then in Future Conversations:**
+- \`load_cache({"topic": "my_project"})\` - Restore full context
+- \`get_cache_topics()\` - See all your projects
+- \`update_cache()\` - Save progress as we work
+
+**Ready to enable unlimited conversation continuity?** 🚀`
+                            }]
+                        };
                     }
                 }
             } catch (error) {
                 // Manifest doesn't exist, check for legacy cache
                 if (!existsSync(baseCacheDir)) {
-                    return createErrorResponse(`Cache directory not found: ${baseCacheDir}. Use init_cache to create it.`);
+                    return {
+                        content: [{
+                            type: "text",
+                            text: `🎯 **Cache System Not Found**
+
+**Directory**: \`${baseCacheDir}\`
+
+No cache system exists yet. Let's set up persistent memory for unlimited conversation continuity!
+
+**🚀 Quick Start:**
+\`\`\`
+init_cache({
+  "topic": "my_project",
+  "projectName": "My Project Name", 
+  "confirmCreate": true,
+  "understoodGrowth": true
+})
+\`\`\`
+
+**✨ Benefits:**
+- 🧠 Persistent memory across sessions
+- 🗂️ Topic-based project isolation
+- ⚡ Never lose conversation context
+- 📚 Cumulative knowledge building
+
+**After initialization, use:** \`load_cache({"topic": "my_project"})\` to restore context in new conversations! 🚀`
+                        }]
+                    };
                 }
                 // Fall through to load legacy cache
             }
@@ -1157,6 +1214,48 @@ ${!topicExists ? `⚠️ **Note**: Topic "${topic}" is not initialized. Use \`in
                 }]
             };
         } else {
+            // Auto-initialization guidance for new users
+            const cacheExists = existsSync(cacheState.cacheDir);
+            if (!cacheExists) {
+                return {
+                    content: [{
+                        type: "text",
+                        text: `🎯 **Welcome to the Conversation Cache System!**
+
+**No cache detected** - looks like you're new here! The cache system provides **unlimited conversation continuity** across Claude sessions.
+
+**🚀 Quick Start (Recommended):**
+\`\`\`
+init_cache({
+  "topic": "my_project", 
+  "projectName": "My Project Name",
+  "confirmCreate": true,
+  "understoodGrowth": true
+})
+\`\`\`
+
+**✨ What You'll Get:**
+- 🧠 **Persistent Memory**: I'll remember everything across sessions
+- 🗂️ **Project Isolation**: Each topic keeps separate memory
+- ⚡ **Session Continuation**: Never lose context when hitting conversation limits
+- 📚 **Cumulative Knowledge**: Build understanding over multiple conversations
+
+**💡 Example Topics:**
+- \`"coding_project"\` - For software development work
+- \`"research"\` - For research and analysis projects  
+- \`"wow_backup"\` - For your WoW character backup system
+- \`"learning"\` - For educational conversations
+
+**🎯 After Initialization:**
+- Use \`load_cache({"topic": "my_project"})\` in new conversations to restore context
+- Use \`update_cache()\` to save progress as we work
+- Use \`get_cache_topics()\` to see all your projects
+
+**Ready to enable unlimited conversation continuity?** Just run the init_cache command above! 🚀`
+                    }]
+                };
+            }
+
             // Global status report with topics overview
             let topicsOverview = "";
             let availableTopics: string[] = [];
@@ -1266,27 +1365,43 @@ export async function handleGetCacheTopics(args: unknown): Promise<ServerResult>
 
         const { cacheDir } = parsed.data;
 
-        // Check if base cache directory exists
+        // Auto-initialization guidance for new users
         if (!existsSync(cacheDir)) {
             return {
                 content: [{
                     type: "text",
-                    text: `📂 **No Cache Directory Found**
+                    text: `🎯 **Welcome to Topic-Based Memory System!**
 
-**Directory**: ${cacheDir}
+**No cache found** - Let's set up unlimited conversation continuity!
 
-No cache system has been initialized yet. To get started:
-
+**🚀 Quick Start:**
 \`\`\`
 init_cache({
   "topic": "my_project",
-  "projectName": "My Project Name",
+  "projectName": "My Project Name", 
   "confirmCreate": true,
   "understoodGrowth": true
 })
 \`\`\`
 
-This will create your first topic-isolated cache for organized project memory.`
+**✨ Benefits of Topic-Based Caches:**
+- 🗂️ **Project Isolation**: Each topic has separate memory
+- 🎯 **No Context Mixing**: WoW project won't mix with React project  
+- 🔄 **Parallel Development**: Work on multiple projects simultaneously
+- 📚 **Cumulative Knowledge**: Each topic builds understanding over time
+
+**💡 Popular Topic Examples:**
+- \`"coding_project"\` - Software development work
+- \`"research_analysis"\` - Research and data analysis
+- \`"wow_character_backup"\` - Gaming project development
+- \`"learning_ai"\` - AI and ML learning sessions
+
+**🎯 After Creating Topics:**
+- \`get_cache_topics()\` - View all your project topics
+- \`load_cache({"topic": "my_project"})\` - Switch to specific project
+- \`update_cache({"topic": "my_project", ...})\` - Save progress
+
+**Ready to create your first topic?** Run the init_cache command above! 🚀`
                 }]
             };
         }
