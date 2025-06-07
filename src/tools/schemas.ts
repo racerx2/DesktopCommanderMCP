@@ -137,9 +137,37 @@ export const LoadCacheArgsSchema = z.object({
 });
 
 /**
- * Schema for configuring automatic cache updates
- * Enables hands-off cache maintenance during long conversations
+ * Schema for switching between topics (simplified override command)
  */
+export const SwitchTopicArgsSchema = z.object({
+    topic: z.string(),
+    projectName: z.string().optional()
+});
+
+/**
+ * Schema for creating new topics (simplified override command)
+ */
+export const NewTopicArgsSchema = z.object({
+    topic: z.string(),
+    projectName: z.string(),
+    confirmCreate: z.boolean().optional().default(true),
+    understoodGrowth: z.boolean().optional().default(true)
+});
+
+/**
+ * Schema for pausing/resuming cache system (simplified override command)
+ */
+export const PauseCacheArgsSchema = z.object({
+    action: z.enum(["pause", "resume"]),
+    reason: z.string().optional()
+});
+
+/**
+ * Schema for cache info (simplified debugging command)
+ */
+export const CacheInfoArgsSchema = z.object({
+    detailed: z.boolean().optional().default(false)
+});
 export const AutoUpdateCacheArgsSchema = z.object({
   enable: z.boolean(),
   updateInterval: z.number().optional().default(10), // Every 10 tool calls

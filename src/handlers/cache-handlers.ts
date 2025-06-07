@@ -72,6 +72,12 @@ interface CacheState {
     hasCreatePermission: boolean;   // User granted directory creation permission
     permissionGrantedAt: Date | null; // When permission was granted
     topicAutoUpdateSettings: Map<string, boolean>; // Per-topic auto-update settings
+    
+    // NEW: Automatic startup system
+    autoStartupEnabled: boolean;    // Enable automatic context restoration
+    hasAttemptedAutoStartup: boolean; // Track if auto-startup was tried this session
+    defaultTopic: string | null;    // Default topic for auto-loading
+    autoStartupCompleted: boolean;  // Track if auto-startup finished successfully
 }
 
 /**
@@ -112,7 +118,12 @@ let cacheState: CacheState = {
     activeTopic: null,
     hasCreatePermission: false,
     permissionGrantedAt: null,
-    topicAutoUpdateSettings: new Map()
+    topicAutoUpdateSettings: new Map(),
+    // NEW: Automatic startup system
+    autoStartupEnabled: true,       // Enable automatic context restoration by default
+    hasAttemptedAutoStartup: false, // Track if auto-startup was tried this session
+    defaultTopic: null,             // Default topic for auto-loading
+    autoStartupCompleted: false     // Track if auto-startup finished successfully
 };
 
 /**
@@ -131,6 +142,111 @@ function getCacheDirectory(baseCacheDir: string, topic?: string): string {
     
     // Topic specified: create isolated subdirectory
     return path.join(baseCacheDir, topic);
+}
+
+/**
+ * Automatic startup detection and context restoration
+ * Attempts to automatically restore conversation context without user intervention
+ * 
+ * This function implements the core automatic paradigm:
+ * - Detects if this is a new conversation session
+ * - Automatically attempts to restore appropriate context
+ * - Handles multiple topics intelligently
+ * - Enables background auto-updates by default
+ * 
+ * Smart Loading Strategy:
+ * - One topic exists: Auto-load silently
+ * - Multiple topics: Load most recent or prompt for selection
+ * - No topics: Auto-create default topic or minimal guidance
+ * 
+ * @returns Promise<string | null> - Success message or null if no action taken
+ */
+async function attemptAutoStartup(): Promise<string | null> {
+    // Skip if auto-startup is disabled or already attempted
+    if (!cacheState.autoStartupEnabled || cacheState.hasAttemptedAutoStartup) {
+        return null;
+    }
+
+    // Mark that we've attempted auto-startup for this session
+    cacheState.hasAttemptedAutoStartup = true;
+
+    try {
+        // Check if cache directory exists
+        if (!existsSync(cacheState.cacheDir)) {
+            // No cache directory - this is truly a new user
+            return null; // Let existing welcome messages handle this
+        }
+
+        // Load session manifest to see available topics
+        const manifest = await loadSessionManifest(cacheState.cacheDir);
+        const availableTopics = Object.keys(manifest.activeSessions);
+
+        if (availableTopics.length === 0) {
+            // No topics exist, check for legacy cache
+            const legacyCacheExists = existsSync(getCacheDirectory(cacheState.cacheDir));
+            if (legacyCacheExists) {
+                // Legacy cache exists - auto-load it
+                const loadResult = await handleLoadCache({ useLegacy: true });
+                if (loadResult.content?.[0]?.type === "text") {
+                    cacheState.autoStartupCompleted = true;
+                    cacheState.autoUpdateEnabled = true; // Enable auto-updates by default
+                    return "🔄 **Automatically restored previous session** (legacy cache)";
+                }
+            }
+            return null; // No cache to restore
+        }
+
+        if (availableTopics.length === 1) {
+            // Single topic - auto-load it silently
+            const topic = availableTopics[0];
+            const loadResult = await handleLoadCache({ topic });
+            if (loadResult.content?.[0]?.type === "text") {
+                cacheState.autoStartupCompleted = true;
+                cacheState.autoUpdateEnabled = true; // Enable auto-updates by default
+                cacheState.topicAutoUpdateSettings.set(topic, true); // Enable topic auto-updates
+                return `🔄 **Automatically continued "${topic}" project**`;
+            }
+        }
+
+        if (availableTopics.length > 1) {
+            // Multiple topics - load most recent
+            const sortedTopics = availableTopics
+                .map(topic => ({
+                    name: topic,
+                    lastUsed: new Date(manifest.activeSessions[topic].lastUsed),
+                    projectName: manifest.activeSessions[topic].projectName
+                }))
+                .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime());
+
+            const mostRecent = sortedTopics[0];
+            const loadResult = await handleLoadCache({ topic: mostRecent.name });
+            if (loadResult.content?.[0]?.type === "text") {
+                cacheState.autoStartupCompleted = true;
+                cacheState.autoUpdateEnabled = true;
+                cacheState.topicAutoUpdateSettings.set(mostRecent.name, true);
+                
+                // Provide info about other available topics
+                const otherTopics = sortedTopics.slice(1).map(t => `"${t.name}"`).join(", ");
+                return `🔄 **Automatically continued "${mostRecent.name}" project** (most recent)\n${otherTopics.length > 0 ? `\n💡 Other available projects: ${otherTopics}\nUse \`switch_topic("project_name")\` to switch projects.` : ''}`;
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.warn('Auto-startup failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Automatic startup hook - called before any cache operation
+ * Ensures auto-startup is attempted when cache system is first accessed
+ */
+async function ensureAutoStartup(): Promise<string | null> {
+    if (cacheState.autoStartupEnabled && !cacheState.hasAttemptedAutoStartup) {
+        return await attemptAutoStartup();
+    }
+    return null;
 }
 
 /**
@@ -1145,7 +1261,38 @@ ${targetTopic ? `**Topic Management**: Use \`auto_update_cache\` with different 
  */
 export async function handleGetCacheStatus(args: unknown): Promise<ServerResult> {
     try {
+        // Attempt automatic startup before processing request
+        const autoStartupMessage = await ensureAutoStartup();
+        
         // Validate input parameters
+        const parsed = GetCacheStatusArgsSchema.safeParse(args);
+        if (!parsed.success) {
+            return createErrorResponse(`Invalid arguments: ${parsed.error}`);
+        }
+
+        const { topic } = parsed.data;
+
+        // If auto-startup occurred and was successful, prepend message
+        if (autoStartupMessage && cacheState.autoStartupCompleted) {
+            const originalResult = await handleGetCacheStatusInternal(args);
+            if (originalResult.content?.[0]?.type === "text") {
+                originalResult.content[0].text = `${autoStartupMessage}\n\n${originalResult.content[0].text}`;
+            }
+            return originalResult;
+        }
+
+        // Normal status processing
+        return await handleGetCacheStatusInternal(args);
+    } catch (error) {
+        return createErrorResponse(`Status check failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+/**
+ * Internal cache status function - separated for auto-startup integration
+ */
+async function handleGetCacheStatusInternal(args: unknown): Promise<ServerResult> {
+    try {
         const parsed = GetCacheStatusArgsSchema.safeParse(args);
         if (!parsed.success) {
             return createErrorResponse(`Invalid arguments: ${parsed.error}`);
@@ -1357,7 +1504,37 @@ ${cacheState.autoUpdateEnabled && !cacheState.isInitialized ?
  */
 export async function handleGetCacheTopics(args: unknown): Promise<ServerResult> {
     try {
+        // Attempt automatic startup before processing request
+        const autoStartupMessage = await ensureAutoStartup();
+        
         // Validate input parameters
+        const parsed = GetCacheTopicsArgsSchema.safeParse(args);
+        if (!parsed.success) {
+            return createErrorResponse(`Invalid arguments: ${parsed.error}`);
+        }
+
+        // If auto-startup occurred and was successful, show different flow
+        if (autoStartupMessage && cacheState.autoStartupCompleted) {
+            // Auto-startup worked, show topics with auto-restore message
+            const originalResult = await handleGetCacheTopicsInternal(args);
+            if (originalResult.content?.[0]?.type === "text") {
+                originalResult.content[0].text = `${autoStartupMessage}\n\n${originalResult.content[0].text}`;
+            }
+            return originalResult;
+        }
+
+        // Normal topics processing
+        return await handleGetCacheTopicsInternal(args);
+    } catch (error) {
+        return createErrorResponse(`Topics listing failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+/**
+ * Internal cache topics function - separated for auto-startup integration  
+ */
+async function handleGetCacheTopicsInternal(args: unknown): Promise<ServerResult> {
+    try {
         const parsed = GetCacheTopicsArgsSchema.safeParse(args);
         if (!parsed.success) {
             return createErrorResponse(`Invalid arguments: ${parsed.error}`);
