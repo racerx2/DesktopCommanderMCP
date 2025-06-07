@@ -758,6 +758,7 @@ The cache now contains the latest conversation state and can be loaded in future
  * @param args - LoadCacheArgsSchema validated arguments
  * @param args.cacheDir - Base directory path containing cache files to load
  * @param args.topic - Optional topic specification for loading specific project context
+ * @param args.useLegacy - Optional explicit legacy mode usage (bypasses topic recommendations)
  * @returns ServerResult with complete conversation context from all cache files
  */
 export async function handleLoadCache(args: unknown): Promise<ServerResult> {
@@ -768,10 +769,10 @@ export async function handleLoadCache(args: unknown): Promise<ServerResult> {
             return createErrorResponse(`Invalid arguments: ${parsed.error}`);
         }
 
-        const { cacheDir: baseCacheDir, topic } = parsed.data;
+        const { cacheDir: baseCacheDir, topic, useLegacy } = parsed.data;
 
         // If no topic specified, provide topic selection guidance
-        if (!topic) {
+        if (!topic && !useLegacy) {
             // Check if there are available topics
             try {
                 const manifest = await loadSessionManifest(baseCacheDir);
@@ -804,9 +805,44 @@ ${existsSync(baseCacheDir) ? '\n**Legacy Cache:** A non-topic cache also exists.
                         }]
                     };
                 } else {
-                    // No topics, check for legacy cache
+                    // No topics exist - encourage topic creation instead of legacy mode
                     if (existsSync(baseCacheDir)) {
-                        // Fall through to load legacy cache
+                        return {
+                            content: [{
+                                type: "text",
+                                text: `⚠️ **Legacy Cache Mode Detected**
+
+You're about to load a legacy cache (no topic isolation). For better organization, **consider using topic-based caches** instead:
+
+**Recommended Approach:**
+\`\`\`
+init_cache({
+  "topic": "my_project_name",
+  "projectName": "Descriptive Project Name",
+  "confirmCreate": true,
+  "understoodGrowth": true
+})
+\`\`\`
+
+**Benefits of Topics:**
+- 🗂️ **Separate Memory**: Each project has isolated memory
+- 🎯 **No Context Mixing**: WoW project won't mix with React project
+- ⚡ **Better Organization**: Clean separation of different conversations
+- 🔄 **Parallel Development**: Work on multiple projects simultaneously
+
+**Continue with Legacy Cache:**
+If you really want to load the legacy cache (not recommended):
+\`\`\`
+load_cache({"cacheDir": "${baseCacheDir}", "useLegacy": true})
+\`\`\`
+
+**Migration Option:**
+Load legacy cache, then migrate it to a topic:
+1. \`load_cache({"useLegacy": true})\`
+2. \`init_cache({"topic": "migrated_project"})\`
+3. \`update_cache({"topic": "migrated_project", "conversationSummary": "Migrated from legacy cache"})\``
+                            }]
+                        };
                     } else {
                         return createErrorResponse(`No cache found. Use init_cache to create a new cache system.`);
                     }
@@ -818,6 +854,15 @@ ${existsSync(baseCacheDir) ? '\n**Legacy Cache:** A non-topic cache also exists.
                 }
                 // Fall through to load legacy cache
             }
+        }
+
+        // Handle explicit legacy mode usage
+        if (useLegacy && !topic) {
+            if (!existsSync(baseCacheDir)) {
+                return createErrorResponse(`Legacy cache directory not found: ${baseCacheDir}. Use init_cache to create a new cache system.`);
+            }
+            // Use base directory for legacy mode (no topic subdirectory)
+            // Continue with legacy loading...
         }
 
         // Determine target cache directory

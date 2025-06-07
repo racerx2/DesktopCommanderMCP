@@ -132,7 +132,8 @@ export const UpdateCacheArgsSchema = z.object({
  */
 export const LoadCacheArgsSchema = z.object({
   cacheDir: z.string().optional().default("C:\\Claude_Session"),
-  topic: z.string().optional() // NEW: Topic specification for loading
+  topic: z.string().optional(), // NEW: Topic specification for loading
+  useLegacy: z.boolean().optional().default(false) // NEW: Explicit legacy mode usage
 });
 
 /**
