@@ -50,7 +50,7 @@ import {
     ArchiveCacheArgsSchema,
     CleanupCacheArgsSchema
 } from '../tools/schemas.js';
-import { writeFile, readFile, createDirectory, listDirectory } from '../tools/filesystem.js';
+import { writeFile, readFile, readFileInternal, createDirectory, listDirectory } from '../tools/filesystem.js';
 import { existsSync } from 'fs';
 import path from 'path';
 
@@ -145,8 +145,8 @@ async function loadSessionManifest(baseCacheDir: string): Promise<SessionManifes
     
     try {
         if (existsSync(manifestPath)) {
-            const manifestContent = await readFile(manifestPath, false, 0, 1000);
-            return JSON.parse(manifestContent.content);
+            const manifestContent = await readFileInternal(manifestPath, 0, 1000);
+            return JSON.parse(manifestContent);
         }
     } catch (error) {
         console.warn('Failed to load session manifest, creating new one:', error);
