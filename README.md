@@ -42,6 +42,11 @@ Execute long-running terminal commands on your computer and manage processes thr
 - Command timeout and background execution support
 - Process management (list and kill processes)
 - Session management for long-running commands
+- **Conversation Cache System**: Persistent memory across Claude sessions
+  - Initialize cache for unlimited conversation continuity
+  - Auto-update cache during conversations
+  - Load complete project context in new sessions
+  - Preserve decisions, project state, and next steps
 - Server configuration management:
   - Get/set configuration values
   - Update multiple settings at once
@@ -198,6 +203,11 @@ The server provides a comprehensive set of tools organized into several categori
 | | `search_code` | Search for text/code patterns within file contents using ripgrep |
 | | `get_file_info` | Retrieve detailed metadata about a file or directory |
 | **Text Editing** | `edit_block` | Apply targeted text replacements with enhanced prompting for smaller edits (includes character-level diff feedback) |
+| **Cache System** | `init_cache` | Initialize conversation cache system for persistent memory across sessions |
+| | `update_cache` | Update cache with conversation progress, project updates, decisions, and next steps |
+| | `load_cache` | Load complete conversation context from cache files to restore session state |
+| | `auto_update_cache` | Enable/disable automatic cache updates during conversations |
+| | `get_cache_status` | Check current cache system status and configuration |
 
 ### Tool Usage Examples
 
@@ -240,6 +250,72 @@ When a search fails, you'll see detailed information about the closest match fou
 - Images (local or from URLs) are displayed visually in Claude's interface, not as text
 - Claude can see and analyze the actual image content
 - Default 30-second timeout for URL requests
+
+## Conversation Cache System
+
+The conversation cache system provides Claude with persistent memory across conversation sessions, enabling unlimited conversation continuity for complex projects.
+
+### Key Features
+- **Persistent Memory**: Maintains conversation context across sessions
+- **Project Context Preservation**: Stores technical details, architecture decisions, and project state
+- **Auto-Update Capability**: Automatically maintains cache during long conversations
+- **Session Restoration**: Complete context restoration with single command
+- **Cumulative Knowledge Building**: Each session builds on previous conversations
+
+### Quick Start
+
+Initialize the cache system:
+```javascript
+// Initialize cache for your project
+init_cache({
+  "cacheDir": "C:\\MyProject_Cache",
+  "projectName": "My Complex Project"
+})
+
+// Update cache with progress
+update_cache({
+  "conversationSummary": "Fixed authentication bugs and added OAuth integration",
+  "projectUpdate": "Implemented JWT tokens with custom middleware",
+  "decisionsUpdate": "Decided to use 24-hour token expiration for security",
+  "nextStepsUpdate": "Next: Implement user role management system"
+})
+
+// Enable auto-updates every 5 tool calls
+auto_update_cache({
+  "enable": true,
+  "updateInterval": 5
+})
+```
+
+### Resume Sessions
+
+In any new conversation, restore full context:
+```javascript
+// Instantly restore complete project context
+load_cache({
+  "cacheDir": "C:\\MyProject_Cache"
+})
+```
+
+### Cache Files Structure
+
+The system creates organized cache files:
+```
+C:\MyProject_Cache\
+├── conversation_log.md       # Ongoing conversation history
+├── current_project_state.md  # Technical details and architecture
+├── decisions_made.md         # Key decisions and approaches
+├── next_steps.md            # Current priorities and actions
+└── cache_protocol.md        # Usage instructions
+```
+
+### Benefits
+- **Never lose context** when hitting conversation limits
+- **Seamless project continuity** across multiple work sessions
+- **Enhanced problem-solving** with cumulative knowledge building
+- **Complex project support** for intricate codebases and architectures
+
+For detailed documentation, see [CACHE_SYSTEM.md](CACHE_SYSTEM.md).
 
 ## Fuzzy Search Log Analysis (npm scripts)
 

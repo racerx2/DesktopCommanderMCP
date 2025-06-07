@@ -93,3 +93,50 @@ export const EditBlockArgsSchema = z.object({
   new_string: z.string(),
   expected_replacements: z.number().optional().default(1),
 });
+
+// Cache tools schemas - Conversation persistence system
+// These schemas define the input parameters for the conversation cache management tools
+// that provide persistent memory across Claude conversation sessions
+
+/**
+ * Schema for initializing the conversation cache system
+ * Creates a file-based persistence layer for maintaining conversation context
+ */
+export const InitCacheArgsSchema = z.object({
+  cacheDir: z.string().optional().default("C:\\Claude_Session"),
+  projectName: z.string().optional()
+});
+
+/**
+ * Schema for updating the conversation cache with new information
+ * Allows incremental updates to maintain current conversation state
+ */
+export const UpdateCacheArgsSchema = z.object({
+  conversationSummary: z.string(),
+  projectUpdate: z.string().optional(),
+  decisionsUpdate: z.string().optional(),
+  nextStepsUpdate: z.string().optional()
+});
+
+/**
+ * Schema for loading conversation context from cache files
+ * Restores complete conversation state for seamless session continuation
+ */
+export const LoadCacheArgsSchema = z.object({
+  cacheDir: z.string().optional().default("C:\\Claude_Session")
+});
+
+/**
+ * Schema for configuring automatic cache updates
+ * Enables hands-off cache maintenance during long conversations
+ */
+export const AutoUpdateCacheArgsSchema = z.object({
+  enable: z.boolean(),
+  updateInterval: z.number().optional().default(10) // Every 10 tool calls
+});
+
+/**
+ * Schema for checking cache system status
+ * Provides comprehensive information about current cache state
+ */
+export const GetCacheStatusArgsSchema = z.object({});

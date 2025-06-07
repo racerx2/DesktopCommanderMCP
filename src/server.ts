@@ -32,6 +32,11 @@ import {
     SetConfigValueArgsSchema,
     ListProcessesArgsSchema,
     EditBlockArgsSchema,
+    InitCacheArgsSchema,
+    UpdateCacheArgsSchema,
+    LoadCacheArgsSchema,
+    AutoUpdateCacheArgsSchema,
+    GetCacheStatusArgsSchema,
 } from './tools/schemas.js';
 import {getConfig, setConfigValue} from './tools/config.js';
 import {trackToolCall} from './utils/trackTools.js';
@@ -391,6 +396,110 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         ${CMD_PREFIX_DESCRIPTION}`,
                     inputSchema: zodToJsonSchema(KillProcessArgsSchema),
                 },
+
+                // Cache management tools - Conversation Persistence System
+                // These tools provide Claude with long-term memory across conversation sessions
+                // using file-based storage for maintaining conversation context, project details,
+                // decisions, and next steps. This enables unlimited conversation continuity.
+                {
+                    name: "init_cache",
+                    description: `
+                        Initialize the conversation cache system for persistent memory across sessions.
+                        
+                        Creates a file-based cache system that preserves conversation context, project details,
+                        decisions made, and next steps. This enables unlimited conversation continuity.
+                        
+                        Features:
+                        - Creates cache directory and initial files
+                        - Sets up conversation logging structure
+                        - Enables session resumption capability
+                        - Supports both manual and automatic cache updates
+                        
+                        Cache files created:
+                        - conversation_log.md (ongoing conversation state)
+                        - current_project_state.md (project details and architecture)
+                        - decisions_made.md (key decisions and approaches)
+                        - next_steps.md (immediate priorities and actions)
+                        - cache_protocol.md (usage instructions)
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(InitCacheArgsSchema),
+                },
+                {
+                    name: "update_cache",
+                    description: `
+                        Update the conversation cache with new information and progress.
+                        
+                        Adds new conversation summaries, project updates, decisions, and next steps
+                        to the persistent cache. This maintains current context for future sessions.
+                        
+                        Update types:
+                        - conversationSummary (required): Progress and developments in current session
+                        - projectUpdate (optional): New technical details or architectural changes
+                        - decisionsUpdate (optional): Important decisions or approach changes
+                        - nextStepsUpdate (optional): Updated priorities and immediate actions
+                        
+                        All updates are timestamped and appended to preserve conversation history.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(UpdateCacheArgsSchema),
+                },
+                {
+                    name: "load_cache",
+                    description: `
+                        Load conversation context from cache to restore session state.
+                        
+                        Reads all cache files and provides complete context restoration including:
+                        - Previous conversation history and progress
+                        - Project technical details and architecture
+                        - Key decisions made and approaches taken
+                        - Current priorities and next steps
+                        
+                        This command effectively "resumes" a conversation from where it left off,
+                        providing seamless continuity across session boundaries.
+                        
+                        Use this at the start of new conversations to restore full context.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(LoadCacheArgsSchema),
+                },
+                {
+                    name: "auto_update_cache",
+                    description: `
+                        Enable or disable automatic cache updates during conversations.
+                        
+                        When enabled, the cache system automatically updates with conversation
+                        progress at specified intervals (default: every 10 tool calls).
+                        
+                        Options:
+                        - enable: true/false to turn auto-updates on/off
+                        - updateInterval: number of tool calls between auto-updates
+                        
+                        Auto-updates capture ongoing conversation progress without manual intervention,
+                        ensuring cache stays current throughout long sessions.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(AutoUpdateCacheArgsSchema),
+                },
+                {
+                    name: "get_cache_status",
+                    description: `
+                        Check the current status of the conversation cache system.
+                        
+                        Provides comprehensive information about:
+                        - Cache initialization status
+                        - Cache directory location
+                        - Auto-update configuration
+                        - Tool call counters
+                        - Last update timestamp
+                        - Available cache files
+                        - System health and configuration
+                        
+                        Use this to verify cache system state and troubleshoot any issues.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(GetCacheStatusArgsSchema),
+                },
             ],
         };
     } catch (error) {
@@ -411,6 +520,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
         
         // Track tool call
         trackToolCall(name, args);
+
+        // Cache system integration - Auto-update mechanism
+        // Increment tool call counter for cache auto-updates (excludes status checks to prevent loops)
+        // This enables automatic cache maintenance during long conversation sessions
+        if (name !== 'get_cache_status') { 
+            handlers.incrementToolCallCounter();
+        }
 
         // Using a more structured approach with dedicated handlers
         switch (name) {
@@ -486,6 +602,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 
             case "edit_block":
                 return await handlers.handleEditBlock(args);
+
+            // Cache management tools - Conversation persistence handlers
+            // These handlers implement the conversation cache system that provides
+            // Claude with persistent memory across conversation sessions
+            case "init_cache":
+                return await handlers.handleInitCache(args);
+
+            case "update_cache":
+                return await handlers.handleUpdateCache(args);
+
+            case "load_cache":
+                return await handlers.handleLoadCache(args);
+
+            case "auto_update_cache":
+                return await handlers.handleAutoUpdateCache(args);
+
+            case "get_cache_status":
+                return await handlers.handleGetCacheStatus(args);
 
             default:
                 capture('server_unknown_tool', {name});
