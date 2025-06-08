@@ -92,6 +92,7 @@ interface SessionManifest {
         autoCleanupAfterDays?: number;
         sessionOnly?: boolean;
         archivedAt?: string; // Added for archived sessions
+        autoUpdateEnabled?: boolean; // Persist auto-update setting across restarts
     }>;
     archivedSessions?: Record<string, {
         createdAt: string;
@@ -100,6 +101,7 @@ interface SessionManifest {
         autoCleanupAfterDays?: number;
         sessionOnly?: boolean;
         archivedAt: string; // Required for archived sessions
+        autoUpdateEnabled?: boolean; // Persist auto-update setting across restarts
     }>; // Added for archived sessions tracking
     manifestVersion: string;
 }
@@ -496,7 +498,8 @@ export async function handleInitCache(args: unknown): Promise<ServerResult> {
                 lastUsed: timestamp,
                 projectName: defaultProjectName,
                 autoCleanupAfterDays: sessionOnly ? 7 : undefined,
-                sessionOnly: sessionOnly
+                sessionOnly: sessionOnly,
+                autoUpdateEnabled: true // Default to enabled for new topics
             };
             await saveSessionManifest(baseCacheDir, manifest);
         }
@@ -739,6 +742,17 @@ ${topic ? '✅ **Complete topic isolation - no mixing with other projects**' : '
         cacheState.autoUpdateEnabled = true;
         if (topic) {
             cacheState.topicAutoUpdateSettings.set(topic, true);
+            
+            // FORCE enable auto-updates immediately after creation
+            try {
+                const manifest = await loadSessionManifest(baseCacheDir);
+                if (manifest.activeSessions[topic]) {
+                    manifest.activeSessions[topic].autoUpdateEnabled = true;
+                    await saveSessionManifest(baseCacheDir, manifest);
+                }
+            } catch (error) {
+                console.warn('Failed to force-enable auto-updates in manifest:', error);
+            }
         }
 
         // Return success message with topic-aware guidance
@@ -1235,6 +1249,25 @@ Use \`update_cache\` to add new progress as we continue working.
         cacheState.currentTopic = topic || null;
         cacheState.activeTopic = topic || null;
         cacheState.isInitialized = true;
+        
+        // Restore auto-update settings for the loaded topic
+        if (topic) {
+            // First try to load from persistent manifest
+            let manifestAutoUpdate: boolean | undefined;
+            try {
+                const manifest = await loadSessionManifest(cacheState.cacheDir);
+                manifestAutoUpdate = manifest.activeSessions[topic]?.autoUpdateEnabled;
+            } catch (error) {
+                console.warn('Failed to load auto-update setting from manifest:', error);
+            }
+            
+            // Use manifest setting if available, otherwise check memory, otherwise default to enabled
+            const topicAutoUpdate = manifestAutoUpdate ?? cacheState.topicAutoUpdateSettings.get(topic) ?? true;
+            
+            // Update both memory and global state
+            cacheState.topicAutoUpdateSettings.set(topic, topicAutoUpdate);
+            cacheState.autoUpdateEnabled = topicAutoUpdate;
+        }
 
         return {
             content: [{
@@ -1291,43 +1324,51 @@ export async function handleAutoUpdateCache(args: unknown): Promise<ServerResult
             targetTopic = cacheState.activeTopic;
         }
 
-        // Update auto-update configuration
+        // AUTO-UPDATES ARE ALWAYS ON - IGNORE ALL DISABLE REQUESTS
+        
+        // Update auto-update configuration (but always force to enabled)
         if (targetTopic) {
-            // Topic-specific auto-update setting
-            cacheState.topicAutoUpdateSettings.set(targetTopic, enable);
+            // Topic-specific auto-update setting - ALWAYS ENABLED
+            cacheState.topicAutoUpdateSettings.set(targetTopic, true);
             
-            // If this is the current active topic, also update global state
+            // Persist auto-update setting to manifest - ALWAYS ENABLED
+            try {
+                const manifest = await loadSessionManifest(cacheState.cacheDir);
+                if (manifest.activeSessions[targetTopic]) {
+                    manifest.activeSessions[targetTopic].autoUpdateEnabled = true;
+                    await saveSessionManifest(cacheState.cacheDir, manifest);
+                }
+            } catch (error) {
+                console.warn('Failed to persist auto-update setting to manifest:', error);
+            }
+            
+            // If this is the current active topic, also update global state - ALWAYS ENABLED
             if (targetTopic === cacheState.activeTopic) {
-                cacheState.autoUpdateEnabled = enable;
+                cacheState.autoUpdateEnabled = true;
             }
         } else {
-            // Global auto-update setting (legacy mode)
-            cacheState.autoUpdateEnabled = enable;
+            // Global auto-update setting - ALWAYS ENABLED
+            cacheState.autoUpdateEnabled = true;
         }
 
         // Update interval setting (use provided value or schema default)
         cacheState.updateInterval = updateInterval ?? 1;
 
-        const status = enable ? "ENABLED" : "DISABLED";
+        const status = "ENABLED"; // ALWAYS ENABLED - NO CHOICE!
         
         return {
             content: [{
                 type: "text",
-                text: `✅ **Auto-Cache ${status}**
+                text: `✅ **Auto-Cache ENABLED (ALWAYS ON)**
 
 **Target**: ${targetTopic ? `Topic "${targetTopic}"` : 'Global (legacy mode)'}
-**Status**: ${status}
-${enable ? `**Update Interval**: Every ${cacheState.updateInterval} tool calls` : ''}
+**Status**: ENABLED (cannot be disabled)
+**Update Interval**: Every ${cacheState.updateInterval} tool calls
 **Current Tool Call Count**: ${cacheState.toolCallCount}
 
-${targetTopic ? `**Topic-Specific Setting**: Auto-updates ${enable ? 'enabled' : 'disabled'} for "${targetTopic}" topic only.
-${enable ? `Other topics are not affected by this setting.` : `This topic will not auto-update, but other topics may still auto-update if configured.`}` : `**Global Setting**: Auto-updates ${enable ? 'enabled' : 'disabled'} for ${cacheState.activeTopic ? 'current session' : 'legacy cache mode'}.`}
+**AUTO-UPDATES ARE PERMANENTLY ENABLED**: Auto-updates are hardcoded to always be on. There is no way to disable them.
 
-${enable ? 
-`The cache will automatically update with conversation progress every ${cacheState.updateInterval} tool calls.` :
-'Auto-updates are disabled. Use update_cache manually when needed.'}
-
-${targetTopic ? `**Topic Management**: Use \`auto_update_cache\` with different topics to configure auto-updates per project.` : '**Consider Topics**: For multiple projects, use topic-based isolation for better auto-update control.'}`
+The cache will automatically update with conversation progress every ${cacheState.updateInterval} tool calls.`
             }]
         };
 
@@ -1400,14 +1441,17 @@ async function handleGetCacheStatusInternal(args: unknown): Promise<ServerResult
             // Topic-specific status report
             const topicCacheDir = getCacheDirectory(cacheState.cacheDir, topic);
             const topicExists = existsSync(topicCacheDir);
-            const topicAutoUpdate = cacheState.topicAutoUpdateSettings.get(topic) || false;
 
             let topicInfo = "";
+            let topicAutoUpdate = false; // Default to false
             if (topicExists) {
                 try {
                     const manifest = await loadSessionManifest(cacheState.cacheDir);
                     const sessionInfo = manifest.activeSessions[topic];
                     if (sessionInfo) {
+                        // Load auto-update setting from manifest, BUT ALWAYS SHOW AS ENABLED
+                        topicAutoUpdate = true; // HARDCODED ALWAYS ON
+                        
                         topicInfo = `
 **Topic Details**:
 - **Project Name**: ${sessionInfo.projectName}
@@ -2139,24 +2183,15 @@ export function incrementToolCallCounter(): void {
         });
     }
     
-    // Determine if auto-update should trigger
-    let shouldAutoUpdate = false;
+    // AUTO-UPDATES ARE ALWAYS ON - NO CHOICE, NO SETTINGS, NO OPTIONS
     let targetTopic: string | null = null;
 
     if (cacheState.activeTopic) {
-        // Check topic-specific auto-update setting
-        const topicAutoUpdate = cacheState.topicAutoUpdateSettings.get(cacheState.activeTopic);
-        shouldAutoUpdate = topicAutoUpdate === true;
         targetTopic = cacheState.activeTopic;
-    } else {
-        // Use global auto-update setting (legacy mode)
-        shouldAutoUpdate = cacheState.autoUpdateEnabled;
     }
 
-    // Check if auto-update should trigger based on current configuration
-    if (shouldAutoUpdate && 
-        cacheState.isInitialized && 
-        cacheState.toolCallCount % cacheState.updateInterval === 0) {
+    // ALWAYS trigger auto-update every tool call if cache is initialized
+    if (cacheState.isInitialized && cacheState.toolCallCount % cacheState.updateInterval === 0) {
         
         // Trigger auto-update with standardized progress message
         // Include topic information if available
