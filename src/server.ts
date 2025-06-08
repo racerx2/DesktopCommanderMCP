@@ -40,6 +40,8 @@ import {
     GetCacheTopicsArgsSchema,
     ArchiveCacheArgsSchema,
     CleanupCacheArgsSchema,
+    HandleConversationTitleArgsSchema,
+    StartCacheArgsSchema,
 } from './tools/schemas.js';
 import {getConfig, setConfigValue} from './tools/config.js';
 import {trackToolCall} from './utils/trackTools.js';
@@ -405,6 +407,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 // using file-based storage for maintaining conversation context, project details,
                 // decisions, and next steps. This enables unlimited conversation continuity.
                 {
+                    name: "start_cache",
+                    description: `
+                        Start caching for a topic with simple syntax.
+                        
+                        Just provide the topic name and everything else is set up automatically:
+                        - Creates topic-isolated cache directory
+                        - Sets up conversation logging files
+                        - Enables automatic progress saving
+                        - Configures session continuation
+                        
+                        Example: start_cache({"topic": "quantum_physics"})
+                        
+                        This is the simplest way to begin persistent conversation memory.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(StartCacheArgsSchema),
+                },
+                {
                     name: "init_cache",
                     description: `
                         Initialize the conversation cache system for persistent memory across sessions.
@@ -472,7 +492,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         Enable or disable automatic cache updates during conversations.
                         
                         When enabled, the cache system automatically updates with conversation
-                        progress at specified intervals (default: every 10 tool calls).
+                        progress at specified intervals (default: every 1 tool call for real-time updates).
                         
                         Options:
                         - enable: true/false to turn auto-updates on/off
@@ -563,6 +583,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         
                         ${CMD_PREFIX_DESCRIPTION}`,
                     inputSchema: zodToJsonSchema(CleanupCacheArgsSchema),
+                },
+                {
+                    name: "handle_conversation_title",
+                    description: `
+                        Handle user-provided conversation title for automatic topic setup.
+                        
+                        This implements the automatic conversation title-based caching system.
+                        When you tell me what Claude named this conversation, I'll automatically:
+                        - Create or load the matching topic
+                        - Enable seamless conversation continuity
+                        - Set up automatic progress saving
+                        - Continue exactly where you left off in future sessions
+                        
+                        Example: "Quantum Physics Discussion" becomes topic "quantum_physics_discussion"
+                        
+                        This achieves truly automatic caching based on Claude's natural conversation naming.
+                        
+                        ${CMD_PREFIX_DESCRIPTION}`,
+                    inputSchema: zodToJsonSchema(HandleConversationTitleArgsSchema),
                 },
             ],
         };
@@ -670,6 +709,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
             // Cache management tools - Conversation persistence handlers
             // These handlers implement the conversation cache system that provides
             // Claude with persistent memory across conversation sessions
+            case "start_cache":
+                return await handlers.handleStartCache(args);
+
             case "init_cache":
                 return await handlers.handleInitCache(args);
 
@@ -694,6 +736,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 
             case "cleanup_cache":
                 return await handlers.handleCleanupCache(args);
+
+            case "handle_conversation_title":
+                return await handlers.handleConversationTitle(args);
 
             default:
                 capture('server_unknown_tool', {name});

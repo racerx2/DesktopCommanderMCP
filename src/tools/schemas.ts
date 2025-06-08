@@ -106,10 +106,10 @@ export const EditBlockArgsSchema = z.object({
 export const InitCacheArgsSchema = z.object({
   cacheDir: z.string().optional().default("C:\\Claude_Session"),
   projectName: z.string().optional(),
-  topic: z.string().optional(), // NEW: Topic-based isolation
-  confirmCreate: z.boolean().optional().default(false), // NEW: Explicit permission required
-  understoodGrowth: z.boolean().optional().default(false), // NEW: User acknowledges file growth
-  sessionOnly: z.boolean().optional().default(false) // NEW: Mark as temporary session cache
+  topic: z.string().optional(), // Topic-based isolation
+  confirmCreate: z.boolean().optional().default(true), // CHANGED: Default to true for simplicity
+  understoodGrowth: z.boolean().optional().default(true), // CHANGED: Default to true for simplicity
+  sessionOnly: z.boolean().optional().default(false) // Mark as temporary session cache
 });
 
 /**
@@ -170,7 +170,7 @@ export const CacheInfoArgsSchema = z.object({
 });
 export const AutoUpdateCacheArgsSchema = z.object({
   enable: z.boolean(),
-  updateInterval: z.number().optional().default(10), // Every 10 tool calls
+  updateInterval: z.number().optional().default(1), // Every 1 tool call (real-time)
   topic: z.string().optional() // NEW: Topic-specific auto-update settings
 });
 
@@ -198,6 +198,21 @@ export const ArchiveCacheArgsSchema = z.object({
   topic: z.string(),
   cacheDir: z.string().optional().default("C:\\Claude_Session"),
   confirmArchive: z.boolean().optional().default(false)
+});
+
+/**
+ * Schema for simplified cache startup - just takes topic name
+ */
+export const StartCacheArgsSchema = z.object({
+  topic: z.string().min(1, "Topic name cannot be empty")
+});
+
+/**
+ * Schema for handling user-provided conversation title for automatic topic setup
+ * Implements the brilliant user-suggested approach of asking for Claude's conversation title
+ */
+export const HandleConversationTitleArgsSchema = z.object({
+  conversationTitle: z.string().min(1, "Conversation title cannot be empty")
 });
 
 /**

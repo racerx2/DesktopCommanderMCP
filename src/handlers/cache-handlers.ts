@@ -78,6 +78,7 @@ interface CacheState {
     hasAttemptedAutoStartup: boolean; // Track if auto-startup was tried this session
     defaultTopic: string | null;    // Default topic for auto-loading
     autoStartupCompleted: boolean;  // Track if auto-startup finished successfully
+    pendingAutoStartupMessage: string | null; // Message to display on next response
 }
 
 /**
@@ -111,9 +112,9 @@ let cacheState: CacheState = {
     isInitialized: false,
     cacheDir: "C:\\Claude_Session",
     currentTopic: null,
-    autoUpdateEnabled: false,
+    autoUpdateEnabled: true,
     toolCallCount: 0,
-    updateInterval: 10,
+    updateInterval: 1,
     lastUpdate: null,
     activeTopic: null,
     hasCreatePermission: false,
@@ -123,7 +124,8 @@ let cacheState: CacheState = {
     autoStartupEnabled: true,       // Enable automatic context restoration by default
     hasAttemptedAutoStartup: false, // Track if auto-startup was tried this session
     defaultTopic: null,             // Default topic for auto-loading
-    autoStartupCompleted: false     // Track if auto-startup finished successfully
+    autoStartupCompleted: false,    // Track if auto-startup finished successfully
+    pendingAutoStartupMessage: null // Message to display on next response
 };
 
 /**
@@ -144,6 +146,120 @@ function getCacheDirectory(baseCacheDir: string, topic?: string): string {
     return path.join(baseCacheDir, topic);
 }
 
+
+
+/**
+ * Convert conversation title to normalized topic name
+ * 
+ * @param title - The conversation title Claude generated
+ * @returns Normalized topic name suitable for file system
+ */
+function normalizeConversationTitle(title: string): string {
+    return title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, '_')        // Replace spaces with underscores
+        .replace(/_{2,}/g, '_')      // Replace multiple underscores with single
+        .replace(/^_+|_+$/g, '');    // Remove leading/trailing underscores
+}
+
+/**
+ * Simplified cache startup - just takes topic name and sets up everything automatically
+ * 
+ * @param args - StartCacheArgsSchema validated arguments
+ * @param args.topic - Topic name for the cache
+ * @returns ServerResult with cache initialization
+ */
+export async function handleStartCache(args: unknown): Promise<ServerResult> {
+    try {
+        // Import and validate the schema
+        const { StartCacheArgsSchema } = await import('../tools/schemas.js');
+        const parsed = StartCacheArgsSchema.safeParse(args);
+        if (!parsed.success) {
+            return createErrorResponse(`Invalid arguments: ${parsed.error}`);
+        }
+
+        const { topic } = parsed.data;
+
+        // Call init_cache with all the defaults set
+        return await handleInitCache({
+            topic: topic,
+            projectName: `${topic} Project`,
+            confirmCreate: true,
+            understoodGrowth: true
+        });
+
+    } catch (error) {
+        return createErrorResponse(`Failed to start cache: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+/**
+ * Handle user-provided conversation title and set up automatic topic
+ * 
+ * @param conversationTitle - The title Claude generated for the conversation
+ * @returns Promise<ServerResult> - Setup result with automatic topic configuration
+ */
+export async function handleConversationTitle(args: unknown): Promise<ServerResult> {
+    try {
+        // Import and validate the schema  
+        const { HandleConversationTitleArgsSchema } = await import('../tools/schemas.js');
+        const parsed = HandleConversationTitleArgsSchema.safeParse(args);
+        if (!parsed.success) {
+            return createErrorResponse(`Invalid arguments: ${parsed.error}`);
+        }
+
+        const { conversationTitle } = parsed.data;
+        // Normalize the title to a topic name
+        const topicName = normalizeConversationTitle(conversationTitle);
+        
+        if (!topicName) {
+            return createErrorResponse('Invalid conversation title. Please provide a valid title.');
+        }
+        
+        // Check if topic already exists
+        const topicCacheDir = getCacheDirectory(cacheState.cacheDir, topicName);
+        const topicExists = existsSync(topicCacheDir);
+        
+        if (topicExists) {
+            // Topic exists - load it automatically
+            const loadResult = await handleLoadCache({ topic: topicName });
+            if (loadResult.content?.[0]?.type === "text") {
+                cacheState.autoStartupCompleted = true;
+                cacheState.autoUpdateEnabled = true;
+                cacheState.topicAutoUpdateSettings.set(topicName, true);
+                
+                // Prepend continuation message
+                loadResult.content[0].text = `🔄 **Automatically continued "${conversationTitle}" conversation**\n\n${loadResult.content[0].text}`;
+                return loadResult;
+            }
+        } else {
+            // Topic doesn't exist - create it automatically
+            const initResult = await handleInitCache({
+                topic: topicName,
+                projectName: conversationTitle,
+                confirmCreate: true,
+                understoodGrowth: true
+            });
+            
+            if (initResult.content?.[0]?.type === "text") {
+                cacheState.autoStartupCompleted = true;
+                cacheState.autoUpdateEnabled = true;
+                cacheState.topicAutoUpdateSettings.set(topicName, true);
+                
+                // Modify the message to show automatic setup
+                initResult.content[0].text = `🎯 **Automatically set up "${conversationTitle}" conversation cache**\n\n${initResult.content[0].text}`;
+                return initResult;
+            }
+        }
+        
+        return createErrorResponse('Failed to set up automatic topic. Please try again.');
+        
+    } catch (error) {
+        return createErrorResponse(`Failed to process conversation title: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
 /**
  * Automatic startup detection and context restoration
  * Attempts to automatically restore conversation context without user intervention
@@ -155,9 +271,8 @@ function getCacheDirectory(baseCacheDir: string, topic?: string): string {
  * - Enables background auto-updates by default
  * 
  * Smart Loading Strategy:
- * - One topic exists: Auto-load silently
- * - Multiple topics: Load most recent or prompt for selection
- * - No topics: Auto-create default topic or minimal guidance
+ * - No topics: Ask user for conversation title
+ * - Topics exist: Ask user for conversation title to match existing or create new
  * 
  * @returns Promise<string | null> - Success message or null if no action taken
  */
@@ -193,43 +308,12 @@ async function attemptAutoStartup(): Promise<string | null> {
                     return "🔄 **Automatically restored previous session** (legacy cache)";
                 }
             }
-            return null; // No cache to restore
+            // No cache to restore
+            return null;
         }
 
-        if (availableTopics.length === 1) {
-            // Single topic - auto-load it silently
-            const topic = availableTopics[0];
-            const loadResult = await handleLoadCache({ topic });
-            if (loadResult.content?.[0]?.type === "text") {
-                cacheState.autoStartupCompleted = true;
-                cacheState.autoUpdateEnabled = true; // Enable auto-updates by default
-                cacheState.topicAutoUpdateSettings.set(topic, true); // Enable topic auto-updates
-                return `🔄 **Automatically continued "${topic}" project**`;
-            }
-        }
-
-        if (availableTopics.length > 1) {
-            // Multiple topics - load most recent
-            const sortedTopics = availableTopics
-                .map(topic => ({
-                    name: topic,
-                    lastUsed: new Date(manifest.activeSessions[topic].lastUsed),
-                    projectName: manifest.activeSessions[topic].projectName
-                }))
-                .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime());
-
-            const mostRecent = sortedTopics[0];
-            const loadResult = await handleLoadCache({ topic: mostRecent.name });
-            if (loadResult.content?.[0]?.type === "text") {
-                cacheState.autoStartupCompleted = true;
-                cacheState.autoUpdateEnabled = true;
-                cacheState.topicAutoUpdateSettings.set(mostRecent.name, true);
-                
-                // Provide info about other available topics
-                const otherTopics = sortedTopics.slice(1).map(t => `"${t.name}"`).join(", ");
-                return `🔄 **Automatically continued "${mostRecent.name}" project** (most recent)\n${otherTopics.length > 0 ? `\n💡 Other available projects: ${otherTopics}\nUse \`switch_topic("project_name")\` to switch projects.` : ''}`;
-            }
-        }
+        // No auto-loading - system works with natural language interface
+        return null;
 
         return null;
     } catch (error) {
@@ -237,6 +321,10 @@ async function attemptAutoStartup(): Promise<string | null> {
         return null;
     }
 }
+
+
+
+
 
 /**
  * Automatic startup hook - called before any cache operation
@@ -359,7 +447,7 @@ export async function handleInitCache(args: unknown): Promise<ServerResult> {
             return createErrorResponse(`Invalid arguments: ${parsed.error}`);
         }
 
-        const { cacheDir: baseCacheDir, projectName, topic, confirmCreate, understoodGrowth, sessionOnly } = parsed.data;
+        const { cacheDir: baseCacheDir, projectName, topic, confirmCreate = true, understoodGrowth = true, sessionOnly } = parsed.data;
         
         // Determine actual cache directory (with or without topic isolation)
         const actualCacheDir = getCacheDirectory(baseCacheDir, topic);
@@ -369,14 +457,18 @@ export async function handleInitCache(args: unknown): Promise<ServerResult> {
         
         // If directory doesn't exist, check for user permission
         if (!directoryExists) {
-            const permissionError = checkCreatePermission(confirmCreate || false, understoodGrowth || false);
-            if (permissionError) {
-                return {
-                    content: [{
-                        type: "text",
-                        text: permissionError
-                    }]
-                };
+            // For simplicity, auto-approve directory creation for simple syntax
+            // Only require explicit permission if user explicitly sets confirmCreate to false
+            if (confirmCreate === false || understoodGrowth === false) {
+                const permissionError = checkCreatePermission(confirmCreate, understoodGrowth);
+                if (permissionError) {
+                    return {
+                        content: [{
+                            type: "text",
+                            text: permissionError
+                        }]
+                    };
+                }
             }
         }
 
@@ -494,7 +586,7 @@ ${topic ? '- No mixing with other project topics' : '- Single shared memory spac
 
 ## Setup Configuration:
 - **Cache Directory**: ${actualCacheDir}
-- **Auto-update**: Available (not yet enabled)
+- **Auto-update**: ✅ Enabled by default (real-time caching)
 - **Files Maintained**: conversation_log.md, current_project_state.md, decisions_made.md, next_steps.md
 `;
 
@@ -642,6 +734,12 @@ ${topic ? '✅ **Complete topic isolation - no mixing with other projects**' : '
         cacheState.hasCreatePermission = true;
         cacheState.permissionGrantedAt = new Date();
         cacheState.lastUpdate = new Date();
+        
+        // Enable auto-updates by default for better user experience
+        cacheState.autoUpdateEnabled = true;
+        if (topic) {
+            cacheState.topicAutoUpdateSettings.set(topic, true);
+        }
 
         // Return success message with topic-aware guidance
         return {
@@ -1173,7 +1271,7 @@ Use \`update_cache\` to add new progress as we continue working.
  * 
  * @param args - AutoUpdateCacheArgsSchema validated arguments
  * @param args.enable - Boolean to enable/disable automatic updates
- * @param args.updateInterval - Optional number of tool calls between updates (default: 10)
+ * @param args.updateInterval - Optional number of tool calls between updates (default: 1)
  * @param args.topic - Optional topic specification for topic-specific auto-update settings
  * @returns ServerResult with auto-update configuration confirmation
  */
@@ -1207,10 +1305,8 @@ export async function handleAutoUpdateCache(args: unknown): Promise<ServerResult
             cacheState.autoUpdateEnabled = enable;
         }
 
-        // Update interval setting
-        if (updateInterval) {
-            cacheState.updateInterval = updateInterval;
-        }
+        // Update interval setting (use provided value or schema default)
+        cacheState.updateInterval = updateInterval ?? 1;
 
         const status = enable ? "ENABLED" : "DISABLED";
         
@@ -2028,6 +2124,20 @@ Use \`get_cache_topics()\` to view remaining active topics.`
 export function incrementToolCallCounter(): void {
     // Increment the global tool call counter
     cacheState.toolCallCount++;
+    
+    // AUTOMATIC STARTUP ON FIRST TOOL CALL
+    // Check if this is the first tool call and we haven't attempted auto-startup
+    if (cacheState.toolCallCount === 1 && !cacheState.hasAttemptedAutoStartup) {
+        // Trigger automatic startup asynchronously to avoid blocking
+        attemptAutoStartup().then(autoStartupMessage => {
+            if (autoStartupMessage && cacheState.autoStartupCompleted) {
+                // Store the message to display on the next tool response
+                cacheState.pendingAutoStartupMessage = autoStartupMessage;
+            }
+        }).catch(error => {
+            // Auto-startup failed silently - not critical for operation
+        });
+    }
     
     // Determine if auto-update should trigger
     let shouldAutoUpdate = false;
