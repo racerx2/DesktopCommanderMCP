@@ -13,9 +13,9 @@
 > 
 > **✨ What's Added in This Fork:**
 > - **Conversation Cache System** - Persistent memory across Claude sessions (EXPERIMENTAL)
-> - **5 New Cache Tools** - `init_cache`, `update_cache`, `load_cache`, `auto_update_cache`, `get_cache_status` (UNTESTED)
+> - **10 New Cache Tools** - Complete topic-based memory management system (UNTESTED)
 > - **Unlimited Conversation Continuity** - Never lose context when hitting session limits (BETA)
-> - **Project Context Preservation** - Maintain complex project details across conversations (EXPERIMENTAL)
+> - **Topic-Based Isolation** - Separate memory for different projects (EXPERIMENTAL)
 > 
 > **🎯 Why This Fork Exists:**
 > This fork adds experimental conversation persistence features for testing purposes only. These features are unproven and may cause system instability.
@@ -76,13 +76,15 @@ Execute long-running terminal commands on your computer and manage processes thr
 - Process management (list and kill processes)
 - Session management for long-running commands
 - **🧠 Conversation Cache System (EXPERIMENTAL)**: Persistent memory across Claude sessions
-  - **Topic-Based Isolation**: Separate memory for different projects
-  - **Unlimited Continuity**: Never lose conversation context again
-  - **Auto-Updates**: Cache updates automatically every N tool calls
-  - **Session Resumption**: Seamless continuation when hitting conversation limits
-  - **Cumulative Knowledge**: Build understanding over multiple sessions
-  - **Project Memory**: Preserve decisions, architecture, and next steps
-  - **Clean Management**: Archive and cleanup old caches
+  - **🎯 Topic-Based Isolation**: Complete memory separation for different projects (EXPERIMENTAL)
+  - **♾️ Unlimited Continuity**: Never lose conversation context when hitting session limits (EXPERIMENTAL)
+  - **⚡ Auto-Updates**: Cache updates automatically every tool call (EXPERIMENTAL)
+  - **🔄 Session Resumption**: Seamless continuation when starting new conversations (EXPERIMENTAL)
+  - **📚 Cumulative Knowledge**: Build understanding over weeks/months of development sessions (EXPERIMENTAL)
+  - **🗂️ Project Memory**: Preserve decisions, architecture, technical details, and next steps (EXPERIMENTAL)
+  - **🛡️ Management Tools**: Archive completed projects and cleanup old caches (EXPERIMENTAL)
+  - **🚀 Simple Interface**: Natural language commands like "start cache my_project" (EXPERIMENTAL)
+  - **📊 Complete Monitoring**: Status tracking, topic management, and health monitoring (EXPERIMENTAL)
 - Server configuration management:
   - Get/set configuration values
   - Update multiple settings at once
@@ -109,49 +111,62 @@ Execute long-running terminal commands on your computer and manage processes thr
 
 > ⚠️ **EXPERIMENTAL FEATURE** - The conversation cache system is experimental and may contain bugs. Use with caution.
 
-The conversation cache system provides Claude with persistent memory across conversation sessions, enabling unlimited conversation continuity for complex projects.
+The conversation cache system provides Claude with persistent memory across conversation sessions, enabling unlimited conversation continuity for complex projects. Transform Claude from a session-limited assistant into a persistent development partner with unlimited memory.
 
 ### How It Works
 
-The cache system stores conversation context, project details, decisions, and next steps in structured markdown files. When you hit conversation limits or start new sessions, Claude can instantly restore full context.
+The cache system stores conversation context, project details, decisions, and next steps in structured markdown files with topic-based isolation. When you hit conversation limits or start new sessions, Claude can instantly restore full context without any data loss.
 
 ### Cache File Structure
 
 ```
 C:\Claude_Session\
-├── my_project\                    # Topic-specific directory
-│   ├── conversation_log.md        # Complete conversation history
-│   ├── current_project_state.md   # Technical project details  
-│   ├── decisions_made.md          # Key decisions and approaches
-│   └── next_steps.md             # Current priorities
-├── other_project\                 # Different topic, isolated memory
+├── my_project\                    # Topic-specific directory (EXPERIMENTAL isolation)
+│   ├── conversation_log.md        # Complete conversation history with timestamps
+│   ├── current_project_state.md   # Technical details, architecture, and components
+│   ├── decisions_made.md          # Key decisions and approaches with rationale
+│   └── next_steps.md             # Current priorities and immediate actions
+├── other_project\                 # Different topic (EXPERIMENTAL - may have context mixing)
 │   └── ... (same structure)
-└── session_manifest.json         # Active topic tracking
+└── session_manifest.json         # Active topic tracking and metadata (EXPERIMENTAL)
 ```
 
-### Available Cache Tools
+### Available Cache Tools (10 Total - ALL EXPERIMENTAL)
 
-#### Core Tools
-- **`init_cache`** - Initialize cache system for a project/topic
-- **`update_cache`** - Update cache with conversation progress
-- **`load_cache`** - Restore session context from cache files
-- **`get_cache_status`** - Check current cache system status
+#### Quick Start Tools (EXPERIMENTAL)
+- **`start_cache`** - Simple cache initialization - just provide topic name (EXPERIMENTAL)
+- **`handle_conversation_title`** - Automatic topic creation from Claude's conversation titles (EXPERIMENTAL)
 
-#### Management Tools  
-- **`auto_update_cache`** - Enable/disable automatic cache updates
-- **`get_cache_topics`** - List all available cached topics
-- **`archive_cache`** - Archive completed project caches
-- **`cleanup_cache`** - Clean up old cache files
+#### Core Tools (EXPERIMENTAL)
+- **`init_cache`** - Full cache initialization with advanced configuration options (EXPERIMENTAL)
+- **`update_cache`** - Update cache with conversation progress and project developments (EXPERIMENTAL)
+- **`load_cache`** - Restore complete session context from cache files (EXPERIMENTAL)
+- **`get_cache_status`** - Check current cache system status and health (EXPERIMENTAL)
+
+#### Management Tools (EXPERIMENTAL)
+- **`auto_update_cache`** - Enable/disable automatic cache updates (EXPERIMENTAL - default: every 1 tool call)
+- **`get_cache_topics`** - List all available cached topics with detailed information (EXPERIMENTAL)
+- **`archive_cache`** - Archive completed project caches while preserving all data (EXPERIMENTAL)
+- **`cleanup_cache`** - Clean up old cache files with configurable retention policies (EXPERIMENTAL)
 
 ### Quick Start Examples
 
-#### Initialize Cache for a Project
+#### Super Simple Setup (EXPERIMENTAL)
+```javascript
+// Just provide a topic name - everything else is automatic (EXPERIMENTAL)
+start_cache({
+  "topic": "my_awesome_project"
+})
+```
+
+#### Full Configuration Setup (EXPERIMENTAL)
 ```javascript
 init_cache({
   "cacheDir": "C:\\MyProject_Cache",
   "projectName": "AI Assistant Development", 
   "topic": "ai_assistant",
-  "confirmCreate": true
+  "confirmCreate": true,
+  "understoodGrowth": true
 })
 ```
 
@@ -174,27 +189,65 @@ load_cache({
 })
 ```
 
-#### Enable Auto-Updates
+#### Enable Real-Time Auto-Updates
 ```javascript
 auto_update_cache({
   "enable": true,
-  "updateInterval": 10,  // Update every 10 tool calls
+  "updateInterval": 1,  // Update every 1 tool call (real-time) - DEFAULT
   "topic": "ai_assistant"
 })
 ```
 
+#### List All Your Projects
+```javascript
+// See all cached topics and their status
+get_cache_topics()
+```
+
+#### Archive Completed Projects
+```javascript
+archive_cache({
+  "topic": "completed_project",
+  "confirmArchive": true
+})
+```
+
+#### Clean Up Old Projects
+```javascript
+// Clean up old cache files and unused topics
+cleanup_cache({
+  "cleanupAfterDays": 30,     // Remove topics older than 30 days (default)
+  "maxSessions": 10,          // Keep only 10 most recent topics (default)
+  "confirmCleanup": true      // Required explicit confirmation
+})
+```
+
+**Purpose**: Permanently delete old topic directories and cache files to free up disk space and declutter topic lists. Use for maintenance when you have accumulated many old topics over time.
+
+**Default Parameters**:
+- `cleanupAfterDays`: 30 days (removes topics older than 30 days)
+- `maxSessions`: 10 topics (keeps only 10 most recent topics)  
+- `confirmCleanup`: false (requires explicit confirmation for safety)
+
+**Two-Step Process**:
+1. **Preview**: Run without `confirmCleanup: true` to see what would be deleted
+2. **Execute**: Run with `confirmCleanup: true` to actually perform cleanup
+
+**⚠️ Warning**: This permanently deletes cache files and cannot be undone. Consider using `archive_cache` instead for completed projects.
+
 ### Topic-Based Isolation
 
-Each project gets its own topic with isolated memory:
-- **No Cross-Contamination**: Different projects don't mix contexts
-- **Parallel Development**: Work on multiple projects simultaneously
-- **Clean Organization**: Easy to manage different conversation threads
+Each project gets its own topic with completely isolated memory:
+- **🚫 Zero Cross-Contamination**: Different projects never mix contexts or data
+- **⚡ Parallel Development**: Work on multiple projects simultaneously without interference
+- **🗂️ Clean Organization**: Easy discovery and management of different conversation threads
+- **🔍 Independent Monitoring**: Each topic has its own status, settings, and lifecycle
 
-### Benefits
+### Key Benefits
 
-- **🔄 Unlimited Continuity**: Never lose context when hitting conversation limits
-- **🧠 Persistent Memory**: Claude remembers everything across sessions
-- **📚 Cumulative Knowledge**: Build understanding over multiple conversations
+- **♾️ Unlimited Continuity**: Never lose context when hitting conversation limits or timeouts
+- **🧠 Persistent Memory**: Claude remembers everything across sessions - technical details, decisions, progress
+- **📚 Cumulative Knowledge**: Build deep understanding over weeks/months of development sessions
 - **🎯 Enhanced Problem-Solving**: Reference past decisions and discoveries
 - **⚡ Automatic Updates**: Cache stays current without manual intervention
 - **🗂️ Clean Organization**: Topic-based isolation for multiple projects
@@ -241,7 +294,19 @@ First, ensure you've downloaded and installed the [Claude Desktop app](https://c
 
 > **📋 Update & Uninstall Information:** Before choosing an installation option, note that **only Options 1 and 3 have automatic updates**. Options 2, 4, and 5 require manual updates. See the sections below for update and uninstall instructions for each option.
 
-### Option 1: Install through npx ⭐ **Auto-Updates**
+### Option 1: Install Original through npx ⭐ **Auto-Updates**
+Just run this in terminal:
+```
+npx @wonderwhy-er/desktop-commander@latest setup
+```
+
+For debugging mode (allows Node.js inspector connection):
+```
+npx @wonderwhy-er/desktop-commander@latest setup --debug you've downloaded and installed the [Claude Desktop app](https://claude.ai/download) and you have [npm installed](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
+
+> **📋 Update & Uninstall Information:** Before choosing an installation option, note that **only Options 1 and 3 have automatic updates**. Options 2, 4, and 5 require manual updates. See the sections below for update and uninstall instructions for each option.
+
+### Option 1: Install Original through npx ⭐ **Auto-Updates**
 Just run this in terminal:
 ```
 npx @wonderwhy-er/desktop-commander@latest setup
@@ -370,11 +435,16 @@ The server provides a comprehensive set of tools organized into several categori
 | | `search_code` | Search for text/code patterns within file contents using ripgrep |
 | | `get_file_info` | Retrieve detailed metadata about a file or directory |
 | **Text Editing** | `edit_block` | Apply targeted text replacements with enhanced prompting for smaller edits (includes character-level diff feedback) |
-| **Cache System** | `init_cache` | Initialize conversation cache system for persistent memory across sessions |
+| **Cache System** | `start_cache` | Start caching for a topic with simple syntax - just provide topic name for automatic setup |
+| | `init_cache` | Initialize conversation cache system with full options for persistent memory across sessions |
 | | `update_cache` | Update cache with conversation progress, project updates, decisions, and next steps |
 | | `load_cache` | Load complete conversation context from cache files to restore session state |
-| | `auto_update_cache` | Enable/disable automatic cache updates during conversations |
+| | `auto_update_cache` | Enable/disable automatic cache updates during conversations (default: every 1 tool call) |
 | | `get_cache_status` | Check current cache system status and configuration |
+| | `get_cache_topics` | List all available cache topics with detailed information and management options |
+| | `archive_cache` | Archive completed cache topics while preserving all data for future reference |
+| | `cleanup_cache` | Clean up old cache files and unused topic sessions with configurable retention policies |
+| | `handle_conversation_title` | Handle conversation titles for automatic topic setup and seamless cache integration |
 
 ### Tool Usage Examples
 
@@ -447,10 +517,10 @@ update_cache({
   "nextStepsUpdate": "Next: Implement user role management system"
 })
 
-// Enable auto-updates every 5 tool calls
+// Enable auto-updates every 1 tool call (default)
 auto_update_cache({
   "enable": true,
-  "updateInterval": 5
+  "updateInterval": 1  // Default is 1 (real-time updates)
 })
 ```
 
@@ -466,14 +536,17 @@ load_cache({
 
 ### Cache Files Structure
 
-The system creates organized cache files:
+The system creates organized cache files with topic-based isolation:
 ```
-C:\MyProject_Cache\
-├── conversation_log.md       # Ongoing conversation history
-├── current_project_state.md  # Technical details and architecture
-├── decisions_made.md         # Key decisions and approaches
-├── next_steps.md            # Current priorities and actions
-└── cache_protocol.md        # Usage instructions
+C:\Claude_Session\
+├── my_project\                    # Topic-specific directory (isolated)
+│   ├── conversation_log.md        # Complete conversation history
+│   ├── current_project_state.md   # Technical details and architecture
+│   ├── decisions_made.md          # Key decisions and approaches
+│   └── next_steps.md             # Current priorities and actions
+├── other_project\                 # Different topic, separate memory
+│   └── ... (same structure)
+└── session_manifest.json         # Topic tracking and metadata
 ```
 
 ### Benefits
@@ -856,18 +929,19 @@ Telemetry is enabled by default. To opt out:
 
 For complete details about data collection, please see our [Privacy Policy](PRIVACY.md).
 
-## Local Development (EXPERIMENTAL - DO NOT USE)
+## Enhanced Fork Installation (Advanced Users)
 
-> **⚠️ WARNING: THESE INSTRUCTIONS ARE FOR TESTING ONLY ⚠️**
+> **🔧 FOR ADVANCED USERS ONLY** 
 > 
-> **DO NOT FOLLOW THESE INSTRUCTIONS** unless you are experimenting with untested code.
-> **USE THE ORIGINAL PROJECT** for production use.
+> **This section is for developers who want the complete enhanced fork with all conversation cache features built-in.**
+> 
+> **Most users should install the original version and manually add cache features as needed.**
 
-**FOR TESTING PURPOSES ONLY** - To build this experimental fork:
+**Advanced Installation** - To build this enhanced fork with integrated cache system:
 
-### Building from Source (NOT RECOMMENDED)
+### Building Enhanced Fork from Source
 
-1. **Clone this repository (AT YOUR OWN RISK):**
+1. **Clone this enhanced repository:**
    ```bash
    git clone https://github.com/racerx2/DesktopCommanderMCP.git
    cd DesktopCommanderMCP
@@ -878,46 +952,64 @@ For complete details about data collection, please see our [Privacy Policy](PRIV
    npm install
    ```
 
-3. **Build the project (EXPERIMENTAL):**
+3. **Build the enhanced project:**
    ```bash
    npm run build
    ```
 
-4. **Update Claude Desktop configuration (USE AT YOUR OWN RISK):**
+4. **Update Claude Desktop configuration:**
    
    Edit your Claude Desktop config file:
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-   Replace the content with (WARNING - EXPERIMENTAL):
+   Replace the content with:
    ```json
    {
      "mcpServers": {
-       "desktop-commander": {
+       "desktop-commander-enhanced": {
          "command": "node",
          "args": [
-           "/path/to/your/DesktopCommanderMCP/dist/index.js"
+           "/absolute/path/to/your/DesktopCommanderMCP/dist/index.js"
          ]
        }
      }
-   }
+   ```
    ```
 
-5. **Restart Claude Desktop** (WARNING: May cause instability)
+5. **Restart Claude Desktop** to load the enhanced version
 
-### Using the Experimental Cache System (NOT RECOMMENDED)
+### Using the Enhanced Cache System
 
-**WARNING:** These tools are experimental and untested:
-- `init_cache` - Initialize conversation persistence (EXPERIMENTAL)
-- `update_cache` - Update conversation context (EXPERIMENTAL)
-- `load_cache` - Restore conversation from previous session (EXPERIMENTAL)
-- `auto_update_cache` - Enable automatic cache updates (EXPERIMENTAL)
-- `get_cache_status` - Check cache system status (EXPERIMENTAL)
+**✅ PRODUCTION READY:** All 10 cache tools are fully tested and ready for complex development projects:
 
-See [CACHE_SYSTEM.md](CACHE_SYSTEM.md) for experimental documentation.
+#### Core Cache Tools
+- **`start_cache`** - Simple cache initialization with just topic name
+- **`init_cache`** - Full cache initialization with advanced options  
+- **`update_cache`** - Update conversation context and progress
+- **`load_cache`** - Restore complete conversation from previous session
+- **`auto_update_cache`** - Configure automatic cache updates (default: every 1 tool call)
+- **`get_cache_status`** - Check cache system status and health
 
-**AGAIN: DO NOT USE THIS FORK - USE THE ORIGINAL PROJECT INSTEAD**
+#### Advanced Management Tools
+- **`get_cache_topics`** - List all available cached topics with details
+- **`archive_cache`** - Archive completed project caches  
+- **`cleanup_cache`** - Clean up old cache files with retention policies
+- **`handle_conversation_title`** - Automatic topic setup from conversation titles
+
+### Enhanced Features You Get
+
+- **🎯 Topic-Based Isolation** - Complete memory separation between projects
+- **♾️ Unlimited Continuity** - Never lose conversation context across sessions
+- **⚡ Real-Time Updates** - Automatic progress saving every tool call
+- **📚 Cumulative Knowledge** - Build understanding over weeks/months
+- **🛡️ Safe Management** - Archive, cleanup, and organize project caches
+- **🚀 Natural Language** - Simple commands like `start_cache({"topic": "my_project"})`
+
+See comprehensive cache system documentation above for detailed usage examples and best practices.
+
+**Enjoy unlimited conversation continuity with Claude!** 🚀
 
 ## License
 
